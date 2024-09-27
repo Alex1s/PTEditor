@@ -35,23 +35,40 @@ typedef struct {
         size_t pgd;
         size_t pml5;
     };
+    union {
+        size_t pgd_addr;
+        size_t pml5_addr;
+    };
     /** Page directory 4 / Page map level 4 */
     union {
         size_t p4d;
         size_t pml4;
+    };
+    union {
+        size_t p4d_addr;
+        size_t pml4_addr;
     };
     /** Page upper directory / Page directory pointer table */
     union {
         size_t pud;
         size_t pdpt;
     };
+    union {
+        size_t pud_addr;
+        size_t pdpt_addr;
+    };
     /** Page middle directory / Page directory */
     union {
         size_t pmd;
         size_t pd;
     };
+    union {
+        size_t pmd_addr;
+        size_t pd_addr;
+    };
     /** Page table entry */
     size_t pte;
+    size_t pte_addr;
     /** Bitmask indicating which entries are valid/should be updated */
     size_t valid;
 } ptedit_entry_t;

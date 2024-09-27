@@ -438,24 +438,35 @@ static void vm_to_user(ptedit_entry_t* user, vm_t* vm) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
 #if CONFIG_PGTABLE_LEVELS > 4
     if(vm->p4d) user->p4d = (vm->p4d)->p4d;
+    if(vm->p4d) user->p4d_addr = virt_to_phys(&(vm->p4d)->p4d);
 #else
 #if !defined(__ARCH_HAS_5LEVEL_HACK)
     if(vm->p4d) user->p4d = (vm->p4d)->pgd.pgd;
+    if(vm->p4d) user->p4d_addr = virt_to_phys(&(vm->p4d)->pgd.pgd);
 #else
     if(vm->p4d) user->p4d = (vm->p4d)->pgd;    
+    if(vm->p4d) user->p4d_addr = virt_to_phys(&(vm->p4d)->pgd);
 #endif
 #endif
 #endif
 #if defined(__i386__) || defined(__x86_64__)
     if(vm->pgd) user->pgd = (vm->pgd)->pgd;
+    if(vm->pgd) user->pgd_addr = virt_to_phys(&(vm->pgd)->pgd);
     if(vm->pmd) user->pmd = (vm->pmd)->pmd;
+    if(vm->pmd) user->pmd_addr = virt_to_phys(&(vm->pmd)->pmd);
     if(vm->pud) user->pud = (vm->pud)->pud;
+    if(vm->pud) user->pud_addr = virt_to_phys(&(vm->pud)->pud);
     if(vm->pte) user->pte = (vm->pte)->pte;
+    if(vm->pte) user->pte_addr = virt_to_phys(&(vm->pte)->pte);
 #elif defined(__aarch64__)
     if(vm->pgd) user->pgd = pgd_val(*(vm->pgd));
+    if(vm->pgd) user->pgd_addr = virt_to_phys(&pgd_val(*(vm->pgd)));
     if(vm->pmd) user->pmd = pmd_val(*(vm->pmd));
+    if(vm->pmd) user->pmd_addr = virt_to_phys(&pmd_val(*(vm->pmd)));
     if(vm->pud) user->pud = pud_val(*(vm->pud));
+    if(vm->pud) user->pud_addr = virt_to_phys(&pud_val(*(vm->pud)));
     if(vm->pte) user->pte = pte_val(*(vm->pte));
+    if(vm->pte) user->pte_addr = virt_to_phys(&pte_val(*(vm->pte)));
 #endif
     user->valid = vm->valid;
 }
