@@ -915,3 +915,62 @@ ptedit_fnc void ptedit_pte_set_pfn(void* address, pid_t pid, size_t pfn) {
     vm.valid = PTEDIT_VALID_MASK_PTE;
     ptedit_update(address, pid, &vm);
 }
+
+// ---------------------------------------------------------------------------
+ptedit_fnc ptedit_entry_addresses_t ptedit_resolve_addresses(void * address, pid_t pid) {
+    int shift_pgd = 48, shift_p4d = 39, shift_pud = 30, shift_pmd = 21, shift_pte = 12;
+    size_t mask = (1 << 9) - 1;
+    ptedit_entry_addresses_t resolve_adresses;
+    ptedit_entry_t resolve;
+    int page_size;
+
+    page_size = ptedit_get_pagesize();
+    memset(&resolve_adresses, 0, sizeof(resolve_adresses));
+    resolve = ptedit_resolve(address, pid);
+
+    if (resolve.pgd == resolve.p4d) { // 4 level page table
+        shift_pgd = shift_p4d;
+    }
+
+    resolve_adresses.pid = resolve.pid;
+    resolve_adresses.vaddr = resolve.vaddr;
+
+    resolve_adresses.valid |= PTEDIT_VALID_MASK_PGD;  // always valid
+    resolve_adresses.pgd_addr = ptedit_get_paging_root(pid);
+    resolve_adresses.pgd_addr += sizeof(size_t) * (((size_t) address >> shift_pgd) & mask);
+
+    if (resolve.pgd == resolve.p4d) { // 4 level page table
+        resolve_adresses.valid |= PTEDIT_VALID_MASK_P4D;
+        resolve_adresses.p4d_addr = resolve_adresses.pgd_addr;
+    } else {  // 5 level page table
+        if (!(resolve.valid & PTEDIT_VALID_MASK_PGD)) {
+            return resolve_adresses;
+        }
+        resolve_adresses.valid |= PTEDIT_VALID_MASK_P4D;
+        resolve_adresses.p4d_addr = ptedit_get_pfn(resolve.pgd) * page_size;
+        resolve_adresses.p4d_addr += sizeof(size_t) * (((size_t) address >> shift_p4d) & mask);
+    }
+
+    if (!(resolve.valid & PTEDIT_VALID_MASK_P4D)) {
+        return resolve_adresses;
+    }
+    resolve_adresses.valid |= PTEDIT_VALID_MASK_PUD;
+    resolve_adresses.pud_addr = ptedit_get_pfn(resolve.p4d) * page_size;
+    resolve_adresses.pud_addr += sizeof(size_t) * (((size_t) address >> shift_pud) & mask);
+
+    if (!(resolve.valid & PTEDIT_VALID_MASK_PUD)) {
+        return resolve_adresses;
+    }
+    resolve_adresses.valid |= PTEDIT_VALID_MASK_PMD;
+    resolve_adresses.pmd_addr = ptedit_get_pfn(resolve.pud) * page_size;
+    resolve_adresses.pmd_addr += sizeof(size_t) * (((size_t) address >> shift_pmd) & mask);
+
+    if (!(resolve.valid & PTEDIT_VALID_MASK_PMD)) {
+        return resolve_adresses;
+    }
+    resolve_adresses.valid |= PTEDIT_VALID_MASK_PTE;
+    resolve_adresses.pte_addr = ptedit_get_pfn(resolve.pmd) * page_size;
+    resolve_adresses.pte_addr += sizeof(size_t) * (((size_t) address >> shift_pte) & mask);
+
+    return resolve_adresses;
+}

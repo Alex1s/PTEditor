@@ -32,6 +32,42 @@ typedef size_t pid_t;
 #define PTEDIT_IMPL_USER         2
 
 /**
+ * Structure containing the addresses of the page-table entries of all levels.
+ * The Linux names are aliased with the Intel names.
+ */
+typedef struct {
+    /** Process ID */
+    size_t pid;
+    /** Virtual address */
+    size_t vaddr;
+
+    /** Page global directory / Page map level 5 */
+    union {
+        size_t pgd_addr;
+        size_t pml5_addr;
+    };
+    /** Page directory 4 / Page map level 4 */
+    union {
+        size_t p4d_addr;
+        size_t pml4_addr;
+    };
+    /** Page upper directory / Page directory pointer table */
+    union {
+        size_t pud_addr;
+        size_t pdpt_addr;
+    };
+    /** Page middle directory / Page directory */
+    union {
+        size_t pmd_addr;
+        size_t pd_addr;
+    };
+    /** Page table entry */
+    size_t pte_addr;
+    /** Bitmask indicating which entries are valid/should be updated */
+    size_t valid;
+} ptedit_entry_addresses_t;
+
+/**
  * The bits in a page-table entry
  *
  * @defgroup PAGETABLE_BITS Page Table Bits
@@ -228,6 +264,16 @@ typedef void (*ptedit_update_t)(void*, pid_t, ptedit_entry_t*);
  * @return A structure containing the page-table entries of all levels.
  */
 extern ptedit_fnc ptedit_resolve_t ptedit_resolve;
+
+/**
+ * Resolves the addresses of page-table entries of all levels for a virtual address of a given process.
+ *
+ * @param[in] address The virtual address to resolve
+ * @param[in] pid The pid of the process (0 for own process)
+ *
+ * @return A structure containing the addresses of the page-table entries of all levels.
+ */
+ptedit_fnc ptedit_entry_addresses_t ptedit_resolve_addresses(void * address, pid_t pid);
 
 /**
  * Updates one or more page-table entries for a virtual address of a given process.
